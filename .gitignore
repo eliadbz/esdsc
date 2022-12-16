@@ -1,2 +1,8 @@
 .vscode
 .idea
+
+bin/*
+bin
+
+ignore/*
+ignore
