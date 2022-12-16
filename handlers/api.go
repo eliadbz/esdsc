@@ -1,20 +1,24 @@
 package handlers
 
 import (
-	"errors"
 	"esdsc/util"
-	"fmt"
 	"net/http"
+	"sync"
 )
 
-type ApiClient struct{
+type SubdomainResponse struct{
+	Exists bool
+	FQDN *string
+	StatusCode int
+}
+type SubdomainEnumerateApiClient struct{
 	BaseDomain string
 	Client http.Client
 	isSSL bool
-	StatusCodeIndicator
+	StatusCodeIndicator int
 }
 
-func (client *ApiClient) Init(baseDomain string, isSSL bool, StatusCodeIndicator int){
+func (client *SubdomainEnumerateApiClient) Init(baseDomain string, isSSL bool, StatusCodeIndicator int){
 	/*
 	Initializes the struct
 	*/
@@ -24,23 +28,23 @@ func (client *ApiClient) Init(baseDomain string, isSSL bool, StatusCodeIndicator
 	client.StatusCodeIndicator = StatusCodeIndicator
 }
 
-func (client *ApiClient) executeRequest(url string) (*http.Response, error){
+func (client *SubdomainEnumerateApiClient) executeRequest(url string) (*http.Response, error){
 	/*
 	Executes the requests and returns the response, along with an error if such exists
 	*/
 	req, err := http.NewRequest("GET", url, nil)
 	if !(err == nil){
-		panic(err)
+		return nil, err
 	}
 	resp, err := client.Client.Do(req)
 	return resp, err
 }
 
-func (client *ApiClient) statusCodesEqual(resp http.Response) bool{
+func (client *SubdomainEnumerateApiClient) statusCodesEqual(resp http.Response) bool{
 	return resp.StatusCode == client.StatusCodeIndicator
 }
 
-func (client *ApiClient) SubdomainExists(subdomain string) bool{
+func (client *SubdomainEnumerateApiClient) SubdomainExists(subdomain string) (*SubdomainResponse, error){
 	/*
 	Tests whether a subdomain exists or not by the status code found in the response
 	*/
@@ -48,7 +52,17 @@ func (client *ApiClient) SubdomainExists(subdomain string) bool{
 	url := util.ConstructURL(fqdn, client.isSSL)
 	resp, err := client.executeRequest(url)
 	if !(err == nil){
-		panic(err)
+		return &SubdomainResponse{false, nil, 0}, err
 	}
-	return client.statusCodesEqual(*resp) //If it evaluates to true, it indicates that the subdomain doesn't exist
+	return &SubdomainResponse{!client.statusCodesEqual(*resp), &fqdn, resp.StatusCode}, nil //If it evaluates to false, it indicates that the subdomain doesn't exist
+}
+
+func (client *SubdomainEnumerateApiClient) SubdomainExistsAsync(subdomain string, responseChannel chan *SubdomainResponse, responseWaitGroup *sync.WaitGroup){
+	val, err := client.SubdomainExists(subdomain)
+	if err != nil{
+		responseWaitGroup.Done()
+		return
+	}
+	responseChannel <- val
+	responseWaitGroup.Done()
 }
