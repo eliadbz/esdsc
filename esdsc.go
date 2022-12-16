@@ -8,7 +8,7 @@ import (
 
 func main(){
 	flags := util.ParseFlags()
-	data := util.ReadWordlist(&flags[consts.WORDLIST_PATH].String)
+	data := util.ReadWordlist(flags[consts.WORDLIST_PATH].(*string))
 	domain := "test.com"
 	subdomain := "test"
 	println(util.InsertSubdomain(&subdomain, &domain))
