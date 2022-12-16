@@ -1,0 +1,11 @@
+.vscode
+.idea
+
+bin/*
+bin
+
+ignore/*
+ignore
+
+debug/*
+debug
