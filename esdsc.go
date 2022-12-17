@@ -23,22 +23,6 @@ func initObjects() (*handlers.SubdomainEnumerateApiClient, chan string, error){
 	return &client, dataChannel, nil
 }
 
-func mainOLD(){
-	client, dataChannel, err := initObjects()
-	if err != nil{
-		panic(err)
-	}
-	for name := range dataChannel{
-		resp, err := client.SubdomainExists(name)
-		if err != nil{
-			continue
-		}
-		if resp.Exists{
-			println(*resp.FQDN)
-		}
-	}
-}
-
 func main(){
 	client, dataChannel, err := initObjects()
 	if err != nil{
